@@ -1,0 +1,29 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+new_venv/
+venv/
+.env/
+
+# ML + RAG heavy folders
+agentic_rag/data/
+agentic_rag/vectorstore/
+agentic_rag/mlruns/
+
+# MLflow artifacts
+mlruns/
+mlflow.db
+
+# Git
+.git/
+.gitignore
+
+# OS / logs
+*.log
+.DS_Store
+
+# Optional (if duplicate project)
+RAG/

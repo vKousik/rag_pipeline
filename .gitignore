@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+
+# venv
+new_venv/
+venv/
+
+# ML / RAG heavy stuff
+agentic_rag/data/
+agentic_rag/vectorstore/
+agentic_rag/mlruns/
+
+# Basic Rag
+RAG/data/
+RAG/vectorstore/
+
+# env & logs
+.env
+*.log
+
+# OS
+.DS_Store
