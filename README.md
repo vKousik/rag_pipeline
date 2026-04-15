@@ -15,6 +15,7 @@ This project transitions from a basic RAG system to a **production-ready API** w
 * 📊 MLflow experiment tracking
 * 🐳 Dockerized backend
 * 🔁 CI/CD with GitHub Actions
+* 🧪 Includes **both Basic RAG and Agentic RAG pipelines**
 
 ---
 
@@ -40,66 +41,113 @@ Final grounded response
 ```text
 WEEK11/
 │
-├── agentic_rag/              # Main application (Dockerized)
-│   ├── api/                  # FastAPI app
-│   ├── agents/               # CrewAI agents
-│   ├── crew/                 # Agent orchestration
-│   ├── ingestion/            # Data loading & chunking
-│   ├── services/             # RAG + logic layer
-│   ├── vectorstore/          # ChromaDB storage
-│   ├── mlflow_utils/         # MLflow tracking
-│   ├── schemas/              # Pydantic models
-│   ├── tools/                # Custom tools
-│   ├── data/                 # Input documents
-│   ├── mlruns/               # MLflow logs
-│   ├── Dockerfile            # Docker config (IMPORTANT)
-│   ├── .dockerignore         # Ignore heavy files
+├── agentic_rag/              # Production Agentic RAG (Dockerized)
+│   ├── api/
+│   ├── agents/
+│   ├── crew/
+│   ├── ingestion/
+│   ├── services/
+│   ├── vectorstore/
+│   ├── mlflow_utils/
+│   ├── schemas/
+│   ├── tools/
+│   ├── data/
+│   ├── mlruns/
+│   ├── Dockerfile
+│   ├── .dockerignore
 │   ├── requirements.txt
-│   └── main.py               # CLI (optional)
+│   └── main.py
 │
-├── RAG/                      # Basic RAG pipeline (Task 1)
-├── .github/workflows/        # CI/CD pipeline
+├── RAG/                      # Basic RAG (Task 1)
+│   ├── pipeline.py
+│   ├── embedding.py
+│   ├── data_loader.py
+│   ├── rag_search.py
+│   ├── data/
+│   └── vectorstore/
+│
+├── .github/workflows/
 ├── .env
 └── .gitignore
 ```
 
 ---
 
-## 🧠 Task 1: Knowledge Base (RAG)
+## 🧠 Task 1: Basic RAG Pipeline
 
-* Loads PDF/Text files from `agentic_rag/data/`
-* Splits documents:
+Located in: `RAG/`
+
+### 🔹 What it does
+
+* Loads documents from `RAG/data/`
+* Splits into chunks:
 
   * Chunk size: **500**
   * Overlap: **50**
-* Uses embedding model (sentence-transformers)
+* Generates embeddings using open-source models
 * Stores vectors in **ChromaDB**
-* Retrieval ensures:
-
-  * ❌ No hallucination
-  * ✅ Only answers from documents
+* Retrieves relevant context and answers queries
 
 ---
 
-## 🤖 Task 2: Agentic Intelligence
+### ▶️ Run Basic RAG
 
-Implemented using **CrewAI multi-agent system**:
+```bash
+cd RAG
+python pipeline.py
+```
 
-### 👨‍🔬 Researcher Agent
+---
 
-* Retrieves relevant chunks from vector DB
+### ⚙️ Flow
 
-### ✍️ Writer Agent
+```text
+Load Documents → Clean Text → Split → Embed → Store → Retrieve → Answer
+```
 
-* Converts facts into structured response
+---
 
-### 🧪 Editor Agent
+### ⚠️ Limitation
+
+* Single-step retrieval
+* No validation layer
+* May hallucinate if context is weak
+
+---
+
+## 🤖 Task 2: Agentic RAG (Advanced)
+
+Located in: `agentic_rag/`
+
+### 🔹 Improvements over Basic RAG
+
+| Feature               | Basic RAG | Agentic RAG |
+| --------------------- | --------- | ----------- |
+| Retrieval             | ✅         | ✅           |
+| Multi-agent reasoning | ❌         | ✅           |
+| Hallucination control | ❌         | ✅           |
+| Confidence validation | ❌         | ✅           |
+| Structured output     | ❌         | ✅           |
+
+---
+
+### 🧠 Multi-Agent System (CrewAI)
+
+#### 👨‍🔬 Researcher
+
+* Fetches relevant chunks from vector DB
+
+#### ✍️ Writer
+
+* Generates structured answer
+
+#### 🧪 Editor
 
 * Validates:
 
   * No hallucination
-  * Only retrieved context used
-* If insufficient data:
+  * Only retrieved facts used
+* Returns fallback:
 
   ```text
   "I don't know based on the provided documents."
@@ -119,7 +167,7 @@ POST /ask
 
 ```json
 {
-  "query": "What is data science?"
+  "query": "What is AI?"
 }
 ```
 
@@ -127,7 +175,10 @@ POST /ask
 
 ```json
 {
-  "answer": "..."
+  "query": "...",
+  "answer": "...",
+  "latency": 3.41,
+  "model_used": "groq/llama-3.3-70b-versatile"
 }
 ```
 
@@ -139,9 +190,9 @@ Tracks:
 
 * Latency
 * Prompts
-* Model behavior
+* Model usage
 
-Run UI:
+Run:
 
 ```bash
 mlflow ui
@@ -149,48 +200,44 @@ mlflow ui
 
 ---
 
-## 🐳 Docker Setup (IMPORTANT)
+## 🐳 Docker Setup
 
-### 📍 Build Image (inside agentic_rag)
+### 📍 Build (inside agentic_rag)
 
 ```bash
+cd agentic_rag
 docker build -t agentic-rag:0.0.1 .
 ```
 
 ---
 
-### ▶️ Run Container
+### ▶️ Run
 
 ```bash
-docker run -p 8000:8000 \
--e GROQ_API_KEY=your_key \
-agentic-rag
+docker run -d -p 8000:8000 \
+-e GROQ_API_KEY=your_api_key \
+--name agentic-rag-container \
+agentic-rag:0.0.1
 ```
 
 ---
 
 ## 🔁 CI/CD (GitHub Actions)
 
-Workflow file:
+Workflow:
 
 ```text
 .github/workflows/docker-build.yml
 ```
 
-### What it does:
+### ✔ On every push:
 
-* Runs on every push to `main`
-* Builds Docker image from:
-
-```bash
-./agentic_rag
-```
+* Builds Docker image from `agentic_rag/`
+* Verifies build success
 
 ---
 
 ## 🔐 Environment Variables
-
-Create `.env`: 
 
 ```env
 GROQ_API_KEY=your_api_key
@@ -198,7 +245,7 @@ GROQ_API_KEY=your_api_key
 
 ---
 
-## 🚀 Run Locally (Without Docker)
+## 🚀 Run Locally
 
 ```bash
 cd agentic_rag
@@ -208,36 +255,39 @@ uvicorn api.main:app --reload
 
 ---
 
-## 🧪 Run Ingestion
+## 🧪 Ingestion (Agentic Pipeline inside agentic_rag)
 
 ```bash
-python main.py
+python main.py (choose ingestion in cli)
 ```
 
 ---
 
-## ⚠️ Important Notes
+## ⚠️ Notes
 
-* Uses **Groq API (NOT Ollama)**
+* Uses **Groq API (instead of Ollama)**
 * `.dockerignore` excludes:
 
   * `mlruns/`
   * `vectorstore/`
   * `data/`
-* These should be mounted or generated at runtime
+* These are generated at runtime
 
 ---
 
 ## 🎯 Key Highlights
 
-* ✅ Modular architecture
+* ✅ Dual pipeline (Basic + Agentic)
 * ✅ Multi-agent validation system
 * ✅ No hallucination guarantee
 * ✅ Production-ready API
 * ✅ CI/CD integrated
+* ✅ Monitoring with MLflow
 
+---
 
 ## 👨‍💻 Author
 
 Kousik Mondal
 GitHub: https://github.com/vKousik
+
